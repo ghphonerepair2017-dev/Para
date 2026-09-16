@@ -1,22 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowDownRight,
   ArrowUpRight,
   Aperture,
-  BookOpen,
-  ChevronDown,
   CircleDashed,
   Compass,
-  Eye,
   Instagram,
   Menu,
   Play,
-  Radio,
   Search,
-  Sparkles,
   X,
 } from "lucide-react";
 import "./index.css";
+
+const ambientAudio = "/manus-storage/veiled-atlas-ambient_752be86d.mp3";
 
 const heroImage = "/manus-storage/veiled-atlas-hero_2fde47a2.jpg";
 const archiveImage = "/manus-storage/veiled-atlas-archive_f7a846b3.jpg";
@@ -31,6 +28,11 @@ type Phenomenon = {
   className: string;
   accent: string;
   tags: string[];
+  slug: string;
+  location: string;
+  observed: string;
+  evidence: string;
+  detailImage: string;
 };
 
 const phenomena: Phenomenon[] = [
@@ -44,6 +46,7 @@ const phenomena: Phenomenon[] = [
     className: "phenomenon-card--wide",
     accent: "#aee9df",
     tags: ["Ball lightning", "Marfa lights", "Hessdalen"],
+    slug: "luminous-events", location: "Marfa, Texas / Hessdalen, Norway", observed: "1965 — present", evidence: "Witness accounts / Instrument readings", detailImage: "/manus-storage/veiled-atlas-luminous-detail_78278cd9.jpg",
   },
   {
     number: "02",
@@ -54,6 +57,7 @@ const phenomena: Phenomenon[] = [
     className: "phenomenon-card--dark",
     accent: "#d7b7ff",
     tags: ["Close encounters", "Time slips", "Missing time"],
+    slug: "anomalous-encounters", location: "The quiet places / 03:17", observed: "1976 — present", evidence: "Audio logs / Recovered diaries", detailImage: "/manus-storage/veiled-atlas-encounter-detail_56b69c02.jpg",
   },
   {
     number: "03",
@@ -65,16 +69,36 @@ const phenomena: Phenomenon[] = [
     className: "phenomenon-card--archive",
     accent: "#eab889",
     tags: ["Liminal spaces", "Dream archives", "Folk memory"],
+    slug: "threshold-lore", location: "The old road / Beyond the gate", observed: "Before memory — present", evidence: "Oral tradition / Place memory", detailImage: "/manus-storage/veiled-atlas-threshold-detail_be2cd2e9.jpg",
   },
 ];
+
+function CaseStudy({ item, onBack, onOpen }: { item: Phenomenon; onBack: () => void; onOpen: (slug: string) => void }) {
+  return <div className="case-study-page">
+    <div className="case-study-hero" style={{ backgroundImage: `url(${item.detailImage})` }}><div className="case-study-hero__veil" /><div className="container case-study-hero__inner">
+      <button className="back-link" onClick={onBack}><ArrowDownRight size={15} /> Return to the index</button>
+      <div className="case-study-hero__meta"><span>Case file {item.number}</span><span>{item.kicker}</span></div>
+      <p className="eyebrow">Field report / {item.observed}</p><h1>{item.title}</h1><p className="case-study-hero__dek">{item.description} The record is incomplete by design.</p>
+    </div></div>
+    <div className="case-study-body container">
+      <div className="case-study-sidebar"><span className="mono-label">Archive coordinates</span><strong>{item.location}</strong><span className="mono-label">Evidence class</span><strong>{item.evidence}</strong><span className="case-study-sidebar__signal"><i /> Signal stable</span></div>
+      <article className="case-study-copy"><p className="lead-copy">Some phenomena arrive as a flash of light. Others are slower: a recurring shape in the corner of a photograph, a local story that changes only when you ask it twice, a room that refuses to remain the same room.</p><h2>A working theory<br /><em>is still a question.</em></h2><p>We approach {item.title.toLowerCase()} as a layered record rather than a solved problem. Eyewitness testimony, environmental conditions, historical context, and the texture of the place all matter. No single lens gets to own the story.</p><blockquote>“The most useful map is the one that admits where it ends.”<cite>— V.A. field protocol / 01</cite></blockquote><div className="case-study-data"><div><span>01</span><strong>What is reported</strong><p>Recurring observations made by people who did not know one another, separated by distance but linked by the same detail.</p></div><div><span>02</span><strong>What remains unclear</strong><p>The gap between a pattern and a coincidence—the part that keeps this file open.</p></div></div><button className="outline-button" onClick={() => onOpen(item.slug === "luminous-events" ? "anomalous-encounters" : item.slug === "anomalous-encounters" ? "threshold-lore" : "luminous-events")}>Open the next file <ArrowUpRight size={16} /></button></article>
+    </div>
+  </div>;
+}
 
 function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [joined, setJoined] = useState(false);
   const [activeSection, setActiveSection] = useState("index");
+  const [nightMode, setNightMode] = useState(() => localStorage.getItem("va-night-mode") === "true");
+  const [ambientOn, setAmbientOn] = useState(false);
+  const [caseSlug, setCaseSlug] = useState(() => window.location.pathname.startsWith("/case/") ? window.location.pathname.replace("/case/", "") : "");
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     const ids = ["index", "phenomena", "chronicles", "field-notes"];
+    localStorage.setItem("va-night-mode", String(nightMode));
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -88,15 +112,29 @@ function App() {
       if (element) observer.observe(element);
     });
     return () => observer.disconnect();
-  }, []);
+  }, [nightMode]);
+
+  const openCase = (slug: string) => { window.history.pushState({}, "", `/case/${slug}`); setCaseSlug(slug); window.scrollTo({ top: 0, behavior: "smooth" }); setMenuOpen(false); };
+  const closeCase = () => { window.history.pushState({}, "", "/"); setCaseSlug(""); window.scrollTo({ top: 0, behavior: "smooth" }); };
+  const toggleAmbient = () => {
+    if (!audioRef.current) { audioRef.current = new Audio(ambientAudio); audioRef.current.loop = true; audioRef.current.volume = 0.22; }
+    if (ambientOn) { audioRef.current.pause(); setAmbientOn(false); } else { audioRef.current.play().then(() => setAmbientOn(true)).catch(() => setAmbientOn(false)); }
+  };
 
   const scrollTo = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
     setMenuOpen(false);
   };
 
+  useEffect(() => { const onPop = () => setCaseSlug(window.location.pathname.startsWith("/case/") ? window.location.pathname.replace("/case/", "") : ""); window.addEventListener("popstate", onPop); return () => window.removeEventListener("popstate", onPop); }, []);
+
+  if (caseSlug) {
+    const item = phenomena.find((entry) => entry.slug === caseSlug) || phenomena[0];
+    return <div className={`site-shell ${nightMode ? "night-mode" : ""}`}><div className="grain" aria-hidden="true" /><header className="topbar case-study-topbar"><button className="brand-lockup" onClick={closeCase}><span className="brand-mark"><Aperture size={15} strokeWidth={1.7} /></span><span className="brand-name">Veiled Atlas</span><span className="brand-edition">Case archive</span></button><div className="topbar-actions"><button className={`audio-toggle ${ambientOn ? "audio-toggle--on" : ""}`} onClick={toggleAmbient}><span className="audio-bars"><i /><i /><i /><i /></span>{ambientOn ? "Sound on" : "Sound off"}</button><button className={`night-toggle ${nightMode ? "night-toggle--on" : ""}`} onClick={() => setNightMode((value) => !value)}><span>{nightMode ? "Night" : "Day"}</span><i /></button></div></header><CaseStudy item={item} onBack={closeCase} onOpen={openCase} /></div>;
+  }
+
   return (
-    <div className="site-shell">
+    <div className={`site-shell ${nightMode ? "night-mode" : ""}`}>
       <div className="grain" aria-hidden="true" />
       <header className={`topbar ${menuOpen ? "topbar--menu-open" : ""}`}>
         <button className="brand-lockup" onClick={() => scrollTo("index")} aria-label="Return to top">
@@ -113,7 +151,7 @@ function App() {
         </nav>
         <div className="topbar-actions">
           <button className="icon-button" aria-label="Search the atlas"><Search size={17} /></button>
-          <button className="menu-button" onClick={() => setMenuOpen((value) => !value)} aria-label="Open navigation">
+          <button className={`audio-toggle ${ambientOn ? "audio-toggle--on" : ""}`} onClick={toggleAmbient}><span className="audio-bars"><i /><i /><i /><i /></span>{ambientOn ? "Sound on" : "Sound off"}</button><button className={`night-toggle ${nightMode ? "night-toggle--on" : ""}`} onClick={() => setNightMode((value) => !value)}><span>{nightMode ? "Night" : "Day"}</span><i /></button><button className="menu-button" onClick={() => setMenuOpen((value) => !value)} aria-label="Open navigation">
             {menuOpen ? <X size={18} /> : <Menu size={18} />}
             <span>Menu</span>
           </button>
@@ -126,7 +164,7 @@ function App() {
           {["index", "phenomena", "chronicles", "field-notes"].map((id, index) => (
             <button key={id} onClick={() => scrollTo(id)}><span>0{index + 1}</span>{id.replace("-", " ")}<ArrowUpRight size={20} /></button>
           ))}
-          <div className="mobile-menu__footer"><span>Observatory signal</span><span className="signal-live"><i /> live</span></div>
+          <div className="mobile-menu__footer"><span>Observatory signal</span><span className="signal-live"><i /> live</span></div><div className="mobile-menu__controls"><button onClick={toggleAmbient}><span className="audio-bars"><i /><i /><i /><i /></span>{ambientOn ? "Sound on" : "Sound off"}</button><button onClick={() => setNightMode((value) => !value)}><span className="mobile-menu__toggle" />{nightMode ? "Night mode" : "Day mode"}</button></div>
         </div>
       )}
 
@@ -181,7 +219,7 @@ function App() {
                 <div className="phenomenon-card__veil" />
                 <div className="phenomenon-card__top"><span className="card-number">{item.number}</span><span className="card-kicker">{item.kicker}</span></div>
                 <div className="phenomenon-card__content"><div className="card-icon"><CircleDashed size={25} strokeWidth={1.1} /></div><h3>{item.title}</h3><p>{item.description}</p><div className="tag-row">{item.tags.map((tag) => <span key={tag}>{tag}</span>)}</div></div>
-                <button className="card-arrow" aria-label={`Open ${item.title}`} onClick={() => setJoined(true)}><ArrowUpRight size={21} /></button>
+                <button className="card-arrow" aria-label={`Open ${item.title}`} onClick={() => openCase(item.slug)}><ArrowUpRight size={21} /></button>
               </article>)}
             </div>
           </div>
@@ -209,26 +247,3 @@ function App() {
 
 export default App;
 
-void BookOpen;
-void Eye;
-void Radio;
-void Sparkles;
-void ChevronDown;
-void useEffect;
-void useState;
-void Menu;
-void X;
-void CircleDashed;
-void Compass;
-void Search;
-void Instagram;
-void Aperture;
-void ArrowUpRight;
-void ArrowDownRight;
-void Play;
-
-function _unused() { return null; }
-
-export { _unused };
-
-// Keep imports explicit for tree-shaking and future icon additions.
