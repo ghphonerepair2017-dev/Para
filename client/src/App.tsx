@@ -13,11 +13,13 @@ import {
 } from "lucide-react";
 import "./index.css";
 
-const ambientAudio = "/manus-storage/veiled-atlas-ambient_752be86d.mp3";
+const basePath = import.meta.env.BASE_URL;
+const asset = (name: string) => `${basePath}assets/${name}`;
+const ambientAudio = asset("veiled-atlas-ambient_752be86d.mp3");
 
-const heroImage = "/manus-storage/veiled-atlas-hero_2fde47a2.jpg";
-const archiveImage = "/manus-storage/veiled-atlas-archive_f7a846b3.jpg";
-const lightsImage = "/manus-storage/veiled-atlas-lights_bb5a1ad1.jpg";
+const heroImage = asset("veiled-atlas-hero_2fde47a2.jpg");
+const archiveImage = asset("veiled-atlas-archive_f7a846b3.jpg");
+const lightsImage = asset("veiled-atlas-lights_bb5a1ad1.jpg");
 
 type Phenomenon = {
   number: string;
@@ -46,7 +48,7 @@ const phenomena: Phenomenon[] = [
     className: "phenomenon-card--wide",
     accent: "#aee9df",
     tags: ["Ball lightning", "Marfa lights", "Hessdalen"],
-    slug: "luminous-events", location: "Marfa, Texas / Hessdalen, Norway", observed: "1965 — present", evidence: "Witness accounts / Instrument readings", detailImage: "/manus-storage/veiled-atlas-luminous-detail_78278cd9.jpg",
+    slug: "luminous-events", location: "Marfa, Texas / Hessdalen, Norway", observed: "1965 — present", evidence: "Witness accounts / Instrument readings", detailImage: asset("veiled-atlas-luminous-detail_78278cd9.jpg"),
   },
   {
     number: "02",
@@ -57,7 +59,7 @@ const phenomena: Phenomenon[] = [
     className: "phenomenon-card--dark",
     accent: "#d7b7ff",
     tags: ["Close encounters", "Time slips", "Missing time"],
-    slug: "anomalous-encounters", location: "The quiet places / 03:17", observed: "1976 — present", evidence: "Audio logs / Recovered diaries", detailImage: "/manus-storage/veiled-atlas-encounter-detail_56b69c02.jpg",
+    slug: "anomalous-encounters", location: "The quiet places / 03:17", observed: "1976 — present", evidence: "Audio logs / Recovered diaries", detailImage: asset("veiled-atlas-encounter-detail_56b69c02.jpg"),
   },
   {
     number: "03",
@@ -69,7 +71,7 @@ const phenomena: Phenomenon[] = [
     className: "phenomenon-card--archive",
     accent: "#eab889",
     tags: ["Liminal spaces", "Dream archives", "Folk memory"],
-    slug: "threshold-lore", location: "The old road / Beyond the gate", observed: "Before memory — present", evidence: "Oral tradition / Place memory", detailImage: "/manus-storage/veiled-atlas-threshold-detail_be2cd2e9.jpg",
+    slug: "threshold-lore", location: "The old road / Beyond the gate", observed: "Before memory — present", evidence: "Oral tradition / Place memory", detailImage: asset("veiled-atlas-threshold-detail_be2cd2e9.jpg"),
   },
 ];
 
@@ -93,7 +95,7 @@ function App() {
   const [activeSection, setActiveSection] = useState("index");
   const [nightMode, setNightMode] = useState(() => localStorage.getItem("va-night-mode") === "true");
   const [ambientOn, setAmbientOn] = useState(false);
-  const [caseSlug, setCaseSlug] = useState(() => window.location.pathname.startsWith("/case/") ? window.location.pathname.replace("/case/", "") : "");
+  const [caseSlug, setCaseSlug] = useState(() => window.location.pathname.match(/\/case\/([^/]+)/)?.[1] ?? "");
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
@@ -114,8 +116,8 @@ function App() {
     return () => observer.disconnect();
   }, [nightMode]);
 
-  const openCase = (slug: string) => { window.history.pushState({}, "", `/case/${slug}`); setCaseSlug(slug); window.scrollTo({ top: 0, behavior: "smooth" }); setMenuOpen(false); };
-  const closeCase = () => { window.history.pushState({}, "", "/"); setCaseSlug(""); window.scrollTo({ top: 0, behavior: "smooth" }); };
+  const openCase = (slug: string) => { window.history.pushState({}, "", `${basePath}case/${slug}`); setCaseSlug(slug); window.scrollTo({ top: 0, behavior: "smooth" }); setMenuOpen(false); };
+  const closeCase = () => { window.history.pushState({}, "", basePath); setCaseSlug(""); window.scrollTo({ top: 0, behavior: "smooth" }); };
   const toggleAmbient = () => {
     if (!audioRef.current) { audioRef.current = new Audio(ambientAudio); audioRef.current.loop = true; audioRef.current.volume = 0.22; }
     if (ambientOn) { audioRef.current.pause(); setAmbientOn(false); } else { audioRef.current.play().then(() => setAmbientOn(true)).catch(() => setAmbientOn(false)); }
@@ -126,7 +128,7 @@ function App() {
     setMenuOpen(false);
   };
 
-  useEffect(() => { const onPop = () => setCaseSlug(window.location.pathname.startsWith("/case/") ? window.location.pathname.replace("/case/", "") : ""); window.addEventListener("popstate", onPop); return () => window.removeEventListener("popstate", onPop); }, []);
+  useEffect(() => { const onPop = () => setCaseSlug(window.location.pathname.match(/\/case\/([^/]+)/)?.[1] ?? ""); window.addEventListener("popstate", onPop); return () => window.removeEventListener("popstate", onPop); }, []);
 
   if (caseSlug) {
     const item = phenomena.find((entry) => entry.slug === caseSlug) || phenomena[0];
